@@ -20,6 +20,8 @@ function AddProducts({ closeEvent }) {
     const [products, setProducts] = useState([]);
     const [rows, setRows] = useState([1]);
     const [percent, setPercent] = useState(0)
+    const [productUrl, setProductUrl] = useState([]);
+    const [isUrlLoaded, setIsUrlLoaded] = useState(false);
     const dataRef = collection(db, "Menu");
     const setData = useAppStore((state) => state.setRows);
 
@@ -28,7 +30,8 @@ function AddProducts({ closeEvent }) {
         setData(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
     };
 
-    const addItem = async (prod, url) => {
+    const addItem = async (prod,urls) => {
+        console.log(urls, "I am inside addItem()")
         await addDoc(dataRef, {
             id: uuidv4(),
             name: prod["name"],
@@ -41,7 +44,7 @@ function AddProducts({ closeEvent }) {
             subCategory: prod["subCategory"],
             measureUnit: prod["measureUnit"],
             quantity: prod["quantity"],
-            file: url,
+            file: prod["url"],
             date: String(new Date())
         });
         getUsers();
@@ -54,30 +57,39 @@ function AddProducts({ closeEvent }) {
         if (files.every(isNull)) {
             Swal.fire("Failed!", "Please upload an image first!", "error");
         } else {
-            const storageRef = []
-            const urls = []
             Object.values(products).map((prod) => {
-                const storageRef = ref(storage, `/images/${ prod.file.name + uuidv4()}`)
-                const uploadTask = uploadBytesResumable(storageRef, prod.file);
-                uploadTask.on(
-                    "state_changed",
-                    (snapshot) => {
-                        const percent = Math.round(
-                            (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-                        );
+                console.log(prod, "Mein hu product");
+                prod["url"] = []
+                Object.values(prod.file).forEach(async file => {
+                    const storageRef = ref(storage, `/images/${uuidv4()+ file.name}`)
+                    const uploadTask = uploadBytesResumable(storageRef, file);
+                    
+                    uploadTask.on(
+                        "state_changed",
+                        (snapshot) => {
+                            const percent = Math.round(
+                                (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+                            );
 
-                        // update progress
-                        setPercent(percent);
-                    },
-                    (err) => console.log(err),
-                    () => {
-                        // download url
-                        getDownloadURL(uploadTask.snapshot.ref).then((url) => {
-                            addItem(prod, url);
-                        });
-                    }
-                );
+                            // update progress
+                            setPercent(percent);
+                        },
+                        (err) => console.log(err),
+                         () => {
+                            // download url
+                            getDownloadURL(uploadTask.snapshot.ref).then(async (url) => {
+                                console.log([...productUrl, url], "Download URL");
+                               setProductUrl([...productUrl, url])
+                            });
+                        }
+                    );
+                    const url = await storageRef.getDownloadURL();
+                    console.log(url, "new url download")
+                })
+                addItem(prod,productUrl)
             })
+            console.log(productUrl, "end");
+            // Object.values(products).forEach(prod => addItem(prod));
         }
     }
     return (
