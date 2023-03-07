@@ -53,10 +53,16 @@ function AddProductRow({ products, setProducts, index }) {
         setSettings(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
     };
     const handleChange = async (event) => {
+        
         let data = {}
         data[event.target.name] = event.target.value
         if (event.target.name == "onSale") data[event.target.name] = event.target.checked
-        if (event.target.name == "file" && event.target.files) data[event.target.name] = event.target.files[0]
+        if(event.target.name == "file" && event.target.files )
+        {
+            console.log("Add product row-files", event.target.files);
+            data[event.target.name] = event.target.files
+           
+        }
         setRowData({ ...rowData, ...data })
     }
     useEffect(() => {
@@ -226,7 +232,7 @@ function AddProductRow({ products, setProducts, index }) {
                 />
             </Grid>
             <Grid item xs={3}>
-                <input type="file"  onChange={handleChange} accept="/image/*" name="file" style={{marginTop: "10px"}}/>
+                <input type="file"  onChange={handleChange} accept="/image/*" name="file" multiple style={{marginTop: "10px"}}/>
             </Grid>
         </Grid>
     )
